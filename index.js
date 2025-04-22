@@ -12,8 +12,7 @@ const client = new Client({
 });
 
 // Constants
-const PRAJALPA_THRESHOLD = 5;
-const PRAJALPA_WINDOW = 60 * 60 * 1000; // 1 hour in milliseconds
+const PRAJALPA_THRESHOLD = 50; // New threshold for warnings
 const DATA_FILE = 'data.json';
 
 // Data management
@@ -44,6 +43,19 @@ const DataManager = {
     return data[userId];
   },
 
+  addMessageToHistory(userId, message) {
+    return this.updateUserData(userId, (userData) => ({
+      ...userData,
+      message_history: [
+        ...userData.message_history,
+        {
+          content: message,
+          timestamp: new Date().toISOString()
+        }
+      ]
+    }));
+  },
+
   updateUserData(userId, updateFn) {
     const data = this.loadData();
     data[userId] = updateFn(data[userId] || {
@@ -66,24 +78,24 @@ const PrajalpaScoring = {
     return DataManager.getUserData(userId).prajalpa_score;
   },
 
-  incrementScore(userId) {
-    return DataManager.updateUserData(userId, (userData) => ({
+  incrementScore(userId, message) {
+    const userData = DataManager.updateUserData(userId, (userData) => ({
       ...userData,
       prajalpa_score: (userData.prajalpa_score || 0) + 1,
-      message_history: [
-        ...userData.message_history,
-        new Date().toISOString()
-      ],
       last_updated: new Date().toISOString()
     }));
+    DataManager.addMessageToHistory(userId, message);
+    return userData;
   },
 
-  decrementScore(userId) {
-    return DataManager.updateUserData(userId, (userData) => ({
+  decrementScore(userId, message) {
+    const userData = DataManager.updateUserData(userId, (userData) => ({
       ...userData,
-      prajalpa_score: Math.max(0, (userData.prajalpa_score || 0) - 1),
+      prajalpa_score: (userData.prajalpa_score || 0) - 1,
       last_updated: new Date().toISOString()
     }));
+    DataManager.addMessageToHistory(userId, message);
+    return userData;
   },
 
   containsPrajalpa(message) {
@@ -140,17 +152,19 @@ client.on('messageCreate', message => {
   // Process message content for prajalpa tracking
   const messageContent = message.content.toLowerCase();
   
-  // Handle Krishna mentions (silently decrease score)
+  // Handle Krishna mentions (decrease score)
   if (PrajalpaScoring.containsKrishna(messageContent)) {
-    PrajalpaScoring.decrementScore(message.author.id);
+    const userData = PrajalpaScoring.decrementScore(message.author.id, messageContent);
     return;
   }
   
-  // Handle prajalpa (only respond if threshold exceeded)
+  // Handle prajalpa
   if (PrajalpaScoring.containsPrajalpa(messageContent)) {
-    PrajalpaScoring.incrementScore(message.author.id);
-    if (PrajalpaScoring.checkExcessivePrajalpa(message.author.id)) {
-      message.reply(Responses.getRandomResponse());
+    const userData = PrajalpaScoring.incrementScore(message.author.id, messageContent);
+    
+    // Only send warning if score exceeds threshold
+    if (userData.prajalpa_score > PRAJALPA_THRESHOLD) {
+      message.reply(`<@${message.author.id}>, your prajalpa score (${userData.prajalpa_score}) is getting too high! Please take a break.`);
     }
   }
 });
