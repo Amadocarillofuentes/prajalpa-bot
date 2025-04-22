@@ -1,8 +1,8 @@
 
 require('dotenv').config();
 const { Client, GatewayIntentBits } = require('discord.js');
+const fs = require('fs');
 
-// Initialize client with required intents
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -11,8 +11,50 @@ const client = new Client({
   ]
 });
 
-// In-memory storage for prajalpa scores
-const prajalpaScores = new Map();
+// Constants
+const PRAJALPA_THRESHOLD = 5;
+const PRAJALPA_WINDOW = 60 * 60 * 1000; // 1 hour in milliseconds
+const DATA_FILE = 'data.json';
+
+// Data management
+const DataManager = {
+  loadData() {
+    try {
+      const data = fs.readFileSync(DATA_FILE, 'utf8');
+      return JSON.parse(data);
+    } catch {
+      return {};
+    }
+  },
+
+  saveData(data) {
+    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+  },
+
+  getUserData(userId) {
+    const data = this.loadData();
+    if (!data[userId]) {
+      data[userId] = {
+        prajalpa_score: 0,
+        message_history: [],
+        last_updated: new Date().toISOString()
+      };
+      this.saveData(data);
+    }
+    return data[userId];
+  },
+
+  updateUserData(userId, updateFn) {
+    const data = this.loadData();
+    data[userId] = updateFn(data[userId] || {
+      prajalpa_score: 0,
+      message_history: [],
+      last_updated: new Date().toISOString()
+    });
+    this.saveData(data);
+    return data[userId];
+  }
+};
 
 // Words that affect prajalpa score
 const prajalpaWords = ['gossip', 'idle talk', 'useless talk', 'blah blah', 'drama'];
@@ -21,19 +63,27 @@ const krishnaWords = ['krishna', 'hare krishna', 'radha krishna', 'govinda', 'ha
 // Scoring logic module
 const PrajalpaScoring = {
   getScore(userId) {
-    return prajalpaScores.get(userId) || 0;
+    return DataManager.getUserData(userId).prajalpa_score;
   },
 
   incrementScore(userId) {
-    const currentScore = this.getScore(userId);
-    prajalpaScores.set(userId, currentScore + 1);
-    return currentScore + 1;
+    return DataManager.updateUserData(userId, (userData) => ({
+      ...userData,
+      prajalpa_score: (userData.prajalpa_score || 0) + 1,
+      message_history: [
+        ...userData.message_history,
+        new Date().toISOString()
+      ],
+      last_updated: new Date().toISOString()
+    }));
   },
 
   decrementScore(userId) {
-    const currentScore = this.getScore(userId);
-    prajalpaScores.set(userId, currentScore - 1);
-    return currentScore - 1;
+    return DataManager.updateUserData(userId, (userData) => ({
+      ...userData,
+      prajalpa_score: Math.max(0, (userData.prajalpa_score || 0) - 1),
+      last_updated: new Date().toISOString()
+    }));
   },
 
   containsPrajalpa(message) {
@@ -42,26 +92,27 @@ const PrajalpaScoring = {
 
   containsKrishna(message) {
     return krishnaWords.some(word => message.toLowerCase().includes(word));
+  },
+
+  checkExcessivePrajalpa(userId) {
+    const userData = DataManager.getUserData(userId);
+    const recentMessages = userData.message_history.filter(timestamp => 
+      Date.now() - new Date(timestamp).getTime() < PRAJALPA_WINDOW
+    );
+    return recentMessages.length >= PRAJALPA_THRESHOLD;
   }
 };
 
 // Message responses
 const Responses = {
   prajalpaDetected: [
-    "Uh oh! More prajalpa detected! 🫢",
-    "Watch out for idle talk! 👀",
-    "Careful with the gossip! 🤭",
-    "Less drama, more Krishna! 🙏"
+    "🌸 You've been talking a lot! Take a break or chant Krishna's name for balance! 🌸",
+    "Time to redirect this energy towards Krishna consciousness! 🙏",
+    "Remember, every word could be used in Krishna's service instead! 💫",
+    "Let's focus on spiritual topics instead! 🌺"
   ],
-  krishnaDetected: [
-    "Jaya Shri Krishna! 🌸 Your prajalpa reduced 🙏",
-    "Haribol! 🙏",
-    "All glories to Lord Krishna! 🌺",
-    "Thank you for remembering Krishna! 💫"
-  ],
-  getRandomResponse(type) {
-    const responses = type === 'prajalpa' ? this.prajalpaDetected : this.krishnaDetected;
-    return responses[Math.floor(Math.random() * responses.length)];
+  getRandomResponse() {
+    return this.prajalpaDetected[Math.floor(Math.random() * this.prajalpaDetected.length)];
   }
 };
 
@@ -89,14 +140,18 @@ client.on('messageCreate', message => {
   // Process message content for prajalpa tracking
   const messageContent = message.content.toLowerCase();
   
-  if (PrajalpaScoring.containsPrajalpa(messageContent)) {
-    PrajalpaScoring.incrementScore(message.author.id);
-    message.reply(Responses.getRandomResponse('prajalpa'));
-  }
-  
+  // Handle Krishna mentions (silently decrease score)
   if (PrajalpaScoring.containsKrishna(messageContent)) {
     PrajalpaScoring.decrementScore(message.author.id);
-    message.reply(Responses.getRandomResponse('krishna'));
+    return;
+  }
+  
+  // Handle prajalpa (only respond if threshold exceeded)
+  if (PrajalpaScoring.containsPrajalpa(messageContent)) {
+    PrajalpaScoring.incrementScore(message.author.id);
+    if (PrajalpaScoring.checkExcessivePrajalpa(message.author.id)) {
+      message.reply(Responses.getRandomResponse());
+    }
   }
 });
 
