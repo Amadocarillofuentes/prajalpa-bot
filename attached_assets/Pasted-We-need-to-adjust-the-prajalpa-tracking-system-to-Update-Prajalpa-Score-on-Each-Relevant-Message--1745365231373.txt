@@ -1,0 +1,70 @@
+We need to adjust the prajalpa tracking system to:
+
+Update Prajalpa Score on Each Relevant Message:
+
+The bot should check if the message contains prajalpa-related keywords (e.g., “Govind,” “Radhe Radhe,” etc.).
+
+The prajalpa score should increase or decrease based on the type of message (positive or negative).
+
+Allow the prajalpa score to go negative with no limit.
+
+Message History:
+
+The bot should store all prajalpa-related messages with timestamps in message_history.
+
+Each user should have a message_history array that records all their prajalpa-related messages.
+
+Send Warning on High Prajalpa Score:
+
+If a user's prajalpa score exceeds 50, a message should be sent in the channel notifying the user to take a break.
+
+No message should be sent after each "good" message (i.e., related to prajalpa), only when prajalpa exceeds the threshold of 50.
+
+Ensure Data is Saved Correctly:
+
+Use JSON to store user data (prajalpa score, message history, last updated timestamp).
+
+Make sure data is updated and saved with every relevant message.
+
+Additional Notes:
+
+There should be no limit on negative prajalpa.
+
+Ensure the score decreases appropriately (e.g., when Lord Krishna’s name is mentioned in a positive, devotional way).
+
+After each prajalpa-related message, the bot should update the prajalpa score, and the message_history array should store all prajalpa-related messages.
+
+Code Example to Implement:
+
+javascript
+Copy
+Edit
+// Check message content and adjust prajalpa score
+if (isPrajalpaMessage(message)) {
+    const userId = message.author.id;
+    let userData = data[userId] || { prajalpa_score: 0, message_history: [], last_updated: new Date().toISOString() };
+    
+    // Increment prajalpa score by 1 for each prajalpa-related message
+    userData.prajalpa_score += 1;  // Can also use `-= 1` to decrease score based on context
+
+    // Allow prajalpa score to go negative without limit
+    // If you want to allow it to go indefinitely negative, don't set a minimum value.
+
+    // Save the new prajalpa score and message
+    userData.message_history.push({ message: message.content, timestamp: new Date().toISOString() });
+
+    // Update the last_updated timestamp
+    userData.last_updated = new Date().toISOString();
+
+    // Save to data.json
+    data[userId] = userData;
+
+    // Send a response if prajalpa score is too high (threshold set to 50)
+    if (userData.prajalpa_score > 50) {
+        message.channel.send(`<@${userId}>, your prajalpa score is getting too high! Please take a break.`);
+    }
+}
+Key Updates:
+Threshold of 50: The bot will only send a warning when the prajalpa score exceeds 50.
+
+No Message on "Good" Messages: No bot reply after good prajalpa messages, only after crossing the prajalpa threshold (50).
