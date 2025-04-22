@@ -1,4 +1,8 @@
+const { Client, GatewayIntentBits } = require('discord.js');
+const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
+// Replace 'YOUR_TOKEN_HERE' with process.env.DISCORD_TOKEN
+client.login(process.env.DISCORD_TOKEN).catch(console.error);
 require('dotenv').config();
 const { Client, GatewayIntentBits } = require('discord.js');
 
@@ -20,4 +24,4 @@ client.on('messageCreate', message => {
   }
 });
 
-client.login(process.env.TOKEN);
+client.login(process.env.DISCORD_TOKEN);
