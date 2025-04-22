@@ -1,0 +1,75 @@
+Disable replies for Krishna-related messages.
+
+Respond only when prajalpa exceeds a set limit within an hour.
+
+Implement JSON data storage to track prajalpa and message timing.
+
+1. Set Up JSON Data Storage
+Create a data.json file to track user data.
+
+Data to store:
+
+User ID
+
+Total prajalpa score
+
+Message history (timestamps for tracking excessive prajalpa)
+
+Last updated timestamp
+
+JSON Structure Example:
+
+json
+Copy
+Edit
+{
+  "userId": {
+    "prajalpa_score": 3,
+    "message_history": [
+      "2025-04-23T12:00:00Z",
+      "2025-04-23T12:10:00Z"
+    ],
+    "last_updated": "2025-04-23T12:20:00Z"
+  }
+}
+2. Fix 1: No Reply for Good Krishna Messages
+Condition: When a user sends a message containing “Krishna”, “Radhe”, or “Govind”, their prajalpa score should decrease but without a bot reply.
+
+Code Example:
+
+js
+Copy
+Edit
+// Detect good messages
+if (message.content.match(/Krishna|Radhe|Govind/i)) {
+    // Decrease prajalpa score
+    decreasePrajalpa(userId);
+    return;  // Don't send a reply
+}
+3. Fix 2: Only Respond for Excessive Prajalpa in 1 Hour
+Condition: After tracking prajalpa, if a user exceeds a defined threshold (e.g., 5 prajalpa messages within an hour), the bot will send a funny reminder. If below the threshold, the bot stays silent.
+
+Code Example:
+
+js
+Copy
+Edit
+const prajalpaThreshold = 5;
+const prajalpaWindow = 60 * 60 * 1000; // 1 hour in milliseconds
+
+// Check prajalpa history
+if (messageHistory.length >= prajalpaThreshold) {
+    const lastMessageTime = new Date(messageHistory[messageHistory.length - 1]);
+    if (Date.now() - lastMessageTime < prajalpaWindow) {
+        // If user has crossed the prajalpa threshold within an hour, send reminder
+        message.channel.send("🌸 You've been talking a lot! Take a break or chant Krishna's name for balance! 🌸");
+    }
+}
+4. Final Integration
+Ensure the bot responds correctly:
+
+No replies on Krishna-related messages.
+
+Funny reminder when prajalpa is too high (within the hour).
+
+Track and update user prajalpa scores using the data.json file.
