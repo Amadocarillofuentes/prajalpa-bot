@@ -272,6 +272,13 @@ client.on("messageCreate", (message) => {
     return;
   }
 
+  // Handle !leaderboard command
+  if (message.content.startsWith("!leaderboard")) {
+    leaderboardSystem.updateLeaderboard(client);
+    message.reply("Leaderboard has been updated! Check the leaderboard channel.");
+    return;
+  }
+
   // Process message content for prajalpa tracking
   const messageContent = message.content.toLowerCase();
 
