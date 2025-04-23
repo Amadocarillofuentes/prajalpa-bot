@@ -37,6 +37,8 @@ const DataManager = {
         prajalpa_score: 0,
         message_history: [],
         last_updated: new Date().toISOString(),
+        last_hour_score: 0,
+        last_notified: new Date(0).toISOString(),
       };
       this.saveData(data);
     }
@@ -105,13 +107,49 @@ const PrajalpaScoring = {
   },
 
   incrementScore(userId, message) {
-    const userData = DataManager.updateUserData(userId, (userData) => ({
-      ...userData,
-      prajalpa_score: (userData.prajalpa_score || 0) + 1,
-      last_updated: new Date().toISOString(),
-    }));
+    const now = new Date();
+    const userData = DataManager.updateUserData(userId, (userData) => {
+      const hourAgo = new Date(now - 60 * 60 * 1000);
+      const lastNotified = new Date(userData.last_notified);
+      const lastUpdated = new Date(userData.last_updated);
+      
+      // Reset hourly score if last update was more than an hour ago
+      const hourly_score = lastUpdated < hourAgo ? 1 : (userData.last_hour_score || 0) + 1;
+      
+      return {
+        ...userData,
+        prajalpa_score: (userData.prajalpa_score || 0) + 1,
+        last_hour_score: hourly_score,
+        last_updated: now.toISOString(),
+      };
+    });
     DataManager.addMessageToHistory(userId, message);
     return userData;
+  },
+
+  checkPrajalpaSpikeAndNotify(userId, message) {
+    const userData = DataManager.getUserData(userId);
+    const now = new Date();
+    const lastNotified = new Date(userData.last_notified);
+    const hourAgo = new Date(now - 60 * 60 * 1000);
+
+    if (userData.last_hour_score > 50 && lastNotified < hourAgo) {
+      const spikePrajalpaMessages = [
+        "🎤 Are you delivering a TED talk today? Ease the prajalpa 😄",
+        "🌀 Has entered Ultra Prajalpa Mode!",
+        "📢 Breaking news: Local devotee sets new prajalpa record!",
+        "🎭 Is this a monologue competition?",
+      ];
+      const randomMessage = spikePrajalpaMessages[Math.floor(Math.random() * spikePrajalpaMessages.length)];
+      
+      DataManager.updateUserData(userId, (userData) => ({
+        ...userData,
+        last_notified: now.toISOString(),
+      }));
+
+      return `<@${userId}> ${randomMessage}`;
+    }
+    return null;
   },
 
   decrementScore(userId, message) {
@@ -324,6 +362,12 @@ client.on("messageCreate", (message) => {
       message.reply(
         `<@${message.author.id}>, your prajalpa score (${userData.prajalpa_score}) is getting too high! Please take a break.`,
       );
+    }
+
+    // Check for prajalpa spike
+    const spikeMessage = PrajalpaScoring.checkPrajalpaSpikeAndNotify(message.author.id, message);
+    if (spikeMessage) {
+      message.channel.send(spikeMessage);
     }
   }
 });
