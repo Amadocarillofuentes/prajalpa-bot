@@ -1,6 +1,7 @@
 require("dotenv").config();
 const { Client, GatewayIntentBits } = require("discord.js");
 const fs = require("fs");
+const cron = require('node-cron');
 
 const client = new Client({
   intents: [
@@ -156,8 +157,102 @@ const Responses = {
   },
 };
 
-client.once("ready", () => {
+// Leaderboard System
+class LeaderboardSystem {
+  constructor() {
+    this.LEADERBOARD_CHANNEL_ID = process.env.LEADERBOARD_CHANNEL_ID;
+    this.YESTERDAY_SCORES_FILE = "yesterdayScores.json";
+    this.leaderboardMessage = null;
+  }
+
+  async initialize(client) {
+    const channel = await client.channels.fetch(this.LEADERBOARD_CHANNEL_ID);
+    const messages = await channel.messages.fetch({ limit: 1 });
+    this.leaderboardMessage = messages.first() || await channel.send("Initializing leaderboard...");
+  }
+
+  loadYesterdayScores() {
+    try {
+      return JSON.parse(fs.readFileSync(this.YESTERDAY_SCORES_FILE, 'utf8'));
+    } catch {
+      return {};
+    }
+  }
+
+  saveYesterdayScores(scores) {
+    fs.writeFileSync(this.YESTERDAY_SCORES_FILE, JSON.stringify(scores, null, 2));
+  }
+
+  getScoreEmoji(currentScore, yesterdayScore) {
+    if (yesterdayScore === undefined) return "🆕";
+    return currentScore > yesterdayScore ? "📈" : "📉";
+  }
+
+  async updateLeaderboard(client) {
+    const guild = client.guilds.cache.first();
+    if (!guild) return;
+
+    const verifiedRole = guild.roles.cache.find(role => role.name === "verified");
+    if (!verifiedRole) return;
+
+    const yesterdayScores = this.loadYesterdayScores();
+    const currentScores = {};
+    const leaderboardEntries = [];
+
+    // Get current scores for verified users
+    for (const [userId, userData] of Object.entries(DataManager.loadData())) {
+      const member = await guild.members.fetch(userId).catch(() => null);
+      if (member && member.roles.cache.has(verifiedRole.id)) {
+        currentScores[userId] = userData.prajalpa_score;
+        leaderboardEntries.push({
+          userId,
+          username: member.user.username,
+          score: userData.prajalpa_score,
+          change: this.getScoreEmoji(userData.prajalpa_score, yesterdayScores[userId])
+        });
+      }
+    }
+
+    // Sort entries by score (descending)
+    leaderboardEntries.sort((a, b) => b.score - a.score);
+
+    // Generate leaderboard message
+    const leaderboardContent = [
+      "**📊 Daily Prajalpa Leaderboard**",
+      "```",
+      "Rank  User                Score  Change",
+      "----------------------------------------"
+    ];
+
+    leaderboardEntries.forEach((entry, index) => {
+      const rank = (index + 1).toString().padEnd(4);
+      const username = entry.username.padEnd(20);
+      const score = entry.score.toString().padEnd(6);
+      leaderboardContent.push(`${rank} ${username} ${score} ${entry.change}`);
+    });
+
+    leaderboardContent.push("```");
+    leaderboardContent.push(`Last updated: ${new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })}`);
+
+    // Update the message
+    await this.leaderboardMessage.edit(leaderboardContent.join('\n'));
+    
+    // Save current scores as yesterday's scores
+    this.saveYesterdayScores(currentScores);
+  }
+}
+
+const leaderboardSystem = new LeaderboardSystem();
+
+client.once("ready", async () => {
   console.log("Bot is online!");
+  await leaderboardSystem.initialize(client);
+  
+  // Schedule daily update at 11:59 PM IST
+  cron.schedule('59 23 * * *', () => leaderboardSystem.updateLeaderboard(client), {
+    scheduled: true,
+    timezone: "Asia/Kolkata"
+  });
 });
 
 client.on("messageCreate", (message) => {
