@@ -70,19 +70,31 @@ const DataManager = {
 };
 
 // Words that affect prajalpa score
-const prajalpaWords = [
-  "gossip",
-  "idle talk",
-  "useless talk",
-  "blah blah",
-  "drama",
-];
 const krishnaWords = [
-  "krishna",
-  "hare krishna",
-  "radha krishna",
-  "govinda",
-  "hari",
+  "krishna", "radha", "govinda", "gauranga", "nityananda", "radhanath", "prabhupada",
+  "acharya", "bhakti", "bhajan", "japa", "kirtan", "sankirtan", "vaishnava", "sadhu",
+  "seva", "guru", "parampara", "bhagavatam", "gita", "harinam", "tulasi", "vani",
+  "shiksha", "shastra", "mangala", "arati", "krishna-katha", "satvik", "shravanam",
+  "smaranam", "dhyana", "mantra", "darshan", "prasadam", "satsang", "mahaprabhu",
+  "gaura", "namabhasa", "prema", "rasa", "moksha", "vaikuntha", "vrindavan", "goloka",
+  "bhakta", "brahmachari", "nishkama", "shuddha", "saranagati", "anukul", "kripa",
+  "dharma", "yatra", "ekadashi", "janmashtami", "kartik", "damodar", "purusha",
+  "radhastami", "govardhan", "hare krishna", "jai sri radhe", "radha krishna ki jai",
+  "🙏", "📿", "🪔", "🌸", "🌺", "🕉️", "🛕", "💫", "✨", "🕊️", "💖", "🎶", "📖",
+  "🧘‍♂️", "🧘‍♀️", "🌅", "🪷", "🍃", "🧡", "💜", "☀️", "🐚", "🔔", "💐", "🧂"
+];
+
+const prajalpaWords = [
+  "gossip", "roast", "cringe", "flex", "bro", "bruh", "dude", "dawg", "lol", "lmao",
+  "rofl", "chill", "vibe", "fake", "sus", "simp", "crush", "swag", "yolo", "dead",
+  "boring", "bored", "bore", "drama", "beef", "no cap", "fr", "ong", "random",
+  "trash", "garbage", "stalk", "bae", "flirt", "dating", "otp", "netflix", "youtube",
+  "insta", "ig", "tiktok", "snap", "party", "rave", "club", "yaar", "brocode",
+  "sheesh", "glitch", "npc", "sigma", "alpha", "toxic", "ratio", "prank", "flop",
+  "lowkey", "highkey", "cancel", "canceled", "dragging", "expose", "😂", "🤣", "😭",
+  "😏", "🙄", "😒", "😎", "👀", "💀", "💅", "😩", "🫢", "🫣", "🧍‍♂️", "🧍‍♀️", "🤡",
+  "💔", "🔥", "🤳", "📸", "😹", "👻", "🫥", "🤷‍♂️", "🤷‍♀️", "🙈", "😜", "😬", "😈",
+  "😶‍🌫️", "🎉", "🤫", "🧠"
 ];
 
 // Scoring logic module
