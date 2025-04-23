@@ -189,11 +189,21 @@ class LeaderboardSystem {
   }
 
   async updateLeaderboard(client) {
-    const guild = client.guilds.cache.first();
-    if (!guild) return;
+    try {
+      const channel = await client.channels.fetch(this.LEADERBOARD_CHANNEL_ID);
+      if (!channel) {
+        throw new Error('Leaderboard channel not found. Please check LEADERBOARD_CHANNEL_ID in .env');
+      }
 
-    const verifiedRole = guild.roles.cache.find(role => role.name === "verified");
-    if (!verifiedRole) return;
+      const guild = client.guilds.cache.first();
+      if (!guild) {
+        throw new Error('No guild found');
+      }
+
+      const verifiedRole = guild.roles.cache.find(role => role.name === "verified");
+      if (!verifiedRole) {
+        throw new Error('Verified role not found. Please create a role named "verified"');
+      }
 
     const yesterdayScores = this.loadYesterdayScores();
     const currentScores = {};
@@ -274,8 +284,13 @@ client.on("messageCreate", (message) => {
 
   // Handle !leaderboard command
   if (message.content.startsWith("!leaderboard")) {
-    leaderboardSystem.updateLeaderboard(client);
-    message.reply("Leaderboard has been updated! Check the leaderboard channel.");
+    try {
+      await leaderboardSystem.updateLeaderboard(client);
+      const channelLink = `<#${process.env.LEADERBOARD_CHANNEL_ID}>`;
+      message.reply(`Leaderboard has been updated! Check ${channelLink}`);
+    } catch (error) {
+      message.reply(`Error updating leaderboard: ${error.message}`);
+    }
     return;
   }
 
