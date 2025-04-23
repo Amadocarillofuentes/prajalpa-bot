@@ -205,9 +205,9 @@ class LeaderboardSystem {
         throw new Error('Verified role not found. Please create a role named "verified"');
       }
 
-    const yesterdayScores = this.loadYesterdayScores();
-    const currentScores = {};
-    const leaderboardEntries = [];
+      const yesterdayScores = this.loadYesterdayScores();
+      const currentScores = {};
+      const leaderboardEntries = [];
 
     // Get current scores for verified users
     for (const [userId, userData] of Object.entries(DataManager.loadData())) {
