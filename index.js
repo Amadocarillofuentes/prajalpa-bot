@@ -311,6 +311,23 @@ client.on("messageCreate", (message) => {
   // Ignore bot messages
   if (message.author.bot) return;
 
+  // Handle !help command
+  if (message.content.startsWith("!help")) {
+    const helpEmbed = {
+      color: 0x0099ff,
+      title: '🌸 Prajalpa Bot Commands',
+      description: 'Here are all the available commands:',
+      fields: [
+        { name: '!help', value: 'Shows this help message' },
+        { name: '!ping', value: 'Check if the bot is responsive' },
+        { name: '!prajalpa', value: 'Check your current prajalpa score' }
+      ],
+      footer: { text: 'Stay mindful of prajalpa! 🙏' }
+    };
+    message.reply({ embeds: [helpEmbed] });
+    return;
+  }
+
   // Handle !ping command
   if (message.content.startsWith("!ping")) {
     message.reply("Pong!");
