@@ -373,3 +373,5 @@ client.on("messageCreate", (message) => {
 });
 
 client.login(process.env.DISCORD_TOKEN);
+require('./server');  // Keep the server alive
+
