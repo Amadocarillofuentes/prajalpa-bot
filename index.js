@@ -288,13 +288,15 @@ client.on("messageCreate", (message) => {
 
   // Handle !leaderboard command
   if (message.content.startsWith("!leaderboard")) {
-    try {
-      await leaderboardSystem.updateLeaderboard(client);
-      const channelLink = `<#${process.env.LEADERBOARD_CHANNEL_ID}>`;
-      message.reply(`Leaderboard has been updated! Check ${channelLink}`);
-    } catch (error) {
-      message.reply(`Error updating leaderboard: ${error.message}`);
-    }
+    (async () => {
+      try {
+        await leaderboardSystem.updateLeaderboard(client);
+        const channelLink = `<#${process.env.LEADERBOARD_CHANNEL_ID}>`;
+        message.reply(`Leaderboard has been updated! Check ${channelLink}`);
+      } catch (error) {
+        message.reply(`Error updating leaderboard: ${error.message}`);
+      }
+    })();
     return;
   }
 
