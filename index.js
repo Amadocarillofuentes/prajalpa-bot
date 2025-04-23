@@ -209,8 +209,8 @@ class LeaderboardSystem {
       const currentScores = {};
       const leaderboardEntries = [];
 
-    // Get current scores for verified users
-    for (const [userId, userData] of Object.entries(DataManager.loadData())) {
+      // Get current scores for verified users
+      for (const [userId, userData] of Object.entries(DataManager.loadData())) {
       const member = await guild.members.fetch(userId).catch(() => null);
       if (member && member.roles.cache.has(verifiedRole.id)) {
         currentScores[userId] = userData.prajalpa_score;
@@ -247,8 +247,12 @@ class LeaderboardSystem {
     // Update the message
     await this.leaderboardMessage.edit(leaderboardContent.join('\n'));
     
-    // Save current scores as yesterday's scores
-    this.saveYesterdayScores(currentScores);
+      // Save current scores as yesterday's scores
+      this.saveYesterdayScores(currentScores);
+    } catch (error) {
+      console.error('Error updating leaderboard:', error);
+      throw error;
+    }
   }
 }
 
